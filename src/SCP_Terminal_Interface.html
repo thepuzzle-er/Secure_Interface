@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCP-9065 Terminal</title>
+    <style>
+        body {
+          background-color: #000;
+          color: #0f0;
+          font-family: monospace;
+          padding: 2rem;
+          transition: transform 0.1s ease;
+        }
+        #logo-container {
+          text-align: center;
+        }
+        #logo {
+          max-width: 200px;
+          margin-bottom: 1rem;
+        }
+        h1 {
+          text-align: center;
+        }
+        #terminal {
+          border: 1px solid #0f0;
+          padding: 1rem;
+          background-color: #111;
+          min-height: 300px;
+          display: flex;
+          flex-direction: column;
+        }
+        .input-line {
+          margin-top: 1rem;
+          display: block;
+        }
+        input {
+          background: #000;
+          color: #0f0;
+          border: 1px solid #0f0;
+          width: 100%;
+          font-size: 1.2rem;
+          padding: 0.75rem;
+          margin-top: 1.5rem;
+          z-index: 9999;
+          position: relative;
+          display: block;
+          box-sizing: border-box;
+        }
+        .output {
+          white-space: pre-wrap;
+        }
+        .glitch {
+          color: #0f0;
+          animation: glitch 1s infinite;
+        }
+        .shake {
+          animation: shake 0.1s infinite;
+        }
+
+        @keyframes glitch {
+          0% { transform: translate(0); }
+          20% { transform: translate(-1px, 1px); }
+          40% { transform: translate(-1px, -1px); }
+          60% { transform: translate(1px, 1px); }
+          80% { transform: translate(1px, -1px); }
+          100% { transform: translate(0); }
+        }
+
+        @keyframes shake {
+          0% { transform: translate(1px, 1px) rotate(0deg); }
+          10% { transform: translate(-1px, -2px) rotate(-1deg); }
+          20% { transform: translate(-3px, 0px) rotate(1deg); }
+          30% { transform: translate(3px, 2px) rotate(0deg); }
+          40% { transform: translate(1px, -1px) rotate(1deg); }
+          50% { transform: translate(-1px, 2px) rotate(-1deg); }
+          60% { transform: translate(-3px, 1px) rotate(0deg); }
+          70% { transform: translate(3px, 1px) rotate(-1deg); }
+          80% { transform: translate(-1px, -1px) rotate(1deg); }
+          90% { transform: translate(1px, 2px) rotate(0deg); }
+          100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+    </style>
+</head>
+<body>
+<div id="logo-container">
+    <img id="logo" src="https://scp-wiki.wdfiles.com/local--files/component%3Atheme/logo.png" alt="SCP Foundation Logo">
+</div>
+<h1>SCP Foundation Secure Terminal</h1>
+<div id="terminal">
+    <div class="output">> LOGIN REQUIRED
+        > ENTER CREDENTIALS:</div>
+    <div class="input-line">
+        <input id="commandInput" type="text" autofocus autocomplete="off" placeholder="Enter passcode..." />
+    </div>
+</div>
+
+<audio id="glitchSound" preload="auto">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-glitchy-digital-error-1039.mp3" type="audio/mpeg">
+</audio>
+<audio id="alertSound" preload="auto">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-warning-alarm-buzzer-993.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    window.onload = () => {
+      const terminal = document.getElementById('terminal');
+      const input = document.getElementById('commandInput');
+      const glitchSound = document.getElementById('glitchSound');
+      const alertSound = document.getElementById('alertSound');
+
+      // Ensure sound is loaded and not muted
+      glitchSound.muted = false;
+      alertSound.muted = false;
+      glitchSound.load();
+      alertSound.load();
+
+      const responses = {
+        'admin login': '> ACCESS DENIED\n> SCP-9065 CONTAINMENT DATA IS RESTRICTED',
+        'echo unlock': '> DECRYPTION PROTOCOL IN PROGRESS...\n> DECRYPTION FAILED [ECHO SIGNAL INTERFERENCE]',
+        'scp-9065': '> SCP-9065 STATUS: [REDACTED]\n> ACCESS LEVEL OMEGA REQUIRED',
+        'help': '> AVAILABLE COMMANDS:\n- admin login\n- echo unlock\n- scp-9065\n- help',
+        'unlock omega': '> DECRYPTION COMPLETE\n> ACCESS GRANTED TO SCP-9065',
+        'release scp-9065': '> CONTAINMENT BREACH CONFIRMED\n> SCP-9065 IS NO LONGER SECURE'
+      };
+
+      function logAccess(command) {
+        const logs = JSON.parse(localStorage.getItem('scp9065_logs') || '[]');
+        const timestamp = new Date().toLocaleString();
+        logs.push({ timestamp, command });
+        localStorage.setItem('scp9065_logs', JSON.stringify(logs));
+      }
+
+      input.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          const command = input.value.toLowerCase();
+          const response = responses[command] || '> COMMAND NOT RECOGNIZED\n> TYPE "help" FOR OPTIONS';
+
+          const outputLine = document.createElement('div');
+          outputLine.classList.add('output');
+          outputLine.innerText = '> ' + command + '\n' + response;
+          terminal.insertBefore(outputLine, input.parentElement);
+
+          logAccess(command);
+
+          if (command === 'unlock omega') {
+            outputLine.classList.add('glitch');
+            glitchSound.currentTime = 0;
+            glitchSound.play().catch(e => console.log('Audio play error:', e));
+            document.body.classList.add('shake');
+
+            const countdown = document.createElement('div');
+            countdown.classList.add('output');
+            countdown.innerText = '> SYSTEM BREACH DETECTED\n> INITIATING FAILSAFE IN: 10';
+            terminal.insertBefore(countdown, input.parentElement);
+
+            let timer = 9;
+            const interval = setInterval(() => {
+              countdown.innerText = '> SYSTEM BREACH DETECTED\n> INITIATING FAILSAFE IN: ' + timer;
+              if (timer <= 0) {
+                clearInterval(interval);
+                countdown.innerText = '> FAILSAFE OVERRIDE FAILED\n> SCP-9065 HAS BEEN RELEASED';
+                countdown.classList.add('glitch');
+                document.body.classList.remove('shake');
+              }
+              timer--;
+            }, 1000);
+          }
+
+          if (command === 'release scp-9065') {
+            alertSound.currentTime = 0;
+            alertSound.play().catch(e => console.log('Alert sound error:', e));
+
+            const breach = document.createElement('div');
+            breach.classList.add('output');
+            breach.innerText = '> CONTAINMENT LOCKDOWN DISABLED\n> SCP-9065 HAS BEEN RELEASED INTO THE FACILITY';
+            terminal.insertBefore(breach, input.parentElement);
+          }
+
+          input.value = '';
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+      });
+
+      input.style.display = 'block';
+      input.focus();
+    };
+</script>
+</body>
+</html>
